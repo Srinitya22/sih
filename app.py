@@ -118,35 +118,65 @@ else:
     if menu=="Quiz":
         st.header("🎯 Career Quiz")
 
-        quiz_tree = {
-            "Q1": {"q":"What are your main interests?",
-                   "options":["Photography","Culinary","Engineering","Medicine"]},
-            "Q2-Photography": {"q":"Do you prefer studio editing or outdoor shooting?",
-                               "options":["Editing","Outdoor"]},
-            "Q2-Culinary": {"q":"Do you enjoy baking, cooking, or management?",
-                            "options":["Baking","Cooking","Management"]}
-        }
-
+        # Initialize session state
         if "quiz_step" not in st.session_state:
-            st.session_state.quiz_step = "Q1"
+            st.session_state.quiz_step = "interest"
             st.session_state.answers = []
-            st.session_state.quiz_result = None
+            st.session_state.selected_interest = None
+            st.session_state.selected_course = None
+            st.session_state.colleges = []
 
-        node = quiz_tree[st.session_state.quiz_step]
-        choice = st.radio(node["q"], node["options"], key=st.session_state.quiz_step)
+        # Step 1: Ask main interests
+        if st.session_state.quiz_step == "interest":
+            interests = ["Engineering","Medical","Commerce","Arts","Architecture","Other"]
+            selected = st.radio("What are your main interests?", interests, key="interest")
+            if st.button("Next"):
+                st.session_state.selected_interest = selected
+                st.session_state.quiz_step = "course"
 
-        if st.button("Next Question"):
-            st.session_state.answers.append(choice)
-            next_key = f"Q2-{choice}"
-            if next_key in quiz_tree:
-                st.session_state.quiz_step = next_key
+        # Step 2: List courses based on interest
+        elif st.session_state.quiz_step == "course":
+            # Gather all courses from DATA dynamically
+            course_set = set()
+            for college in DATA["colleges"]:
+                for c in college["courses"]:
+                    course_lower = c.lower()
+                    interest_lower = st.session_state.selected_interest.lower()
+                    # Simple matching logic
+                    if interest_lower in course_lower or \
+                       (interest_lower=="engineering" and "be" in course_lower) or \
+                       (interest_lower=="medical" and any(x in course_lower for x in ["mbbs","nursing","bams","bds","paramedical"])):
+                        course_set.add(c)
+            course_list = sorted(course_set)
+
+            if not course_list:
+                st.warning("No courses found for this interest. Try a different interest.")
+                if st.button("Back"):
+                    st.session_state.quiz_step = "interest"
             else:
-                st.session_state.quiz_result = choice
-                st.success(f"✅ Based on your answers, we suggest: **{choice}**")
+                selected_course = st.radio(f"Which course in {st.session_state.selected_interest} are you interested in?", course_list, key="course")
+                if st.button("Next"):
+                    st.session_state.selected_course = selected_course
+                    # Find matching colleges
+                    matching_colleges = []
+                    for college in DATA["colleges"]:
+                        if any(selected_course.lower() in cr.lower() for cr in college["courses"]):
+                            matching_colleges.append(college["name"])
+                    st.session_state.colleges = matching_colleges
+                    st.session_state.quiz_step = "result"
 
-        if st.session_state.quiz_result:
-            if st.button("View Roadmap"):
-                roadmap.show_roadmap(st.session_state.quiz_result)
+        # Step 3: Show personalized result
+        elif st.session_state.quiz_step == "result":
+            st.success(f"✅ Based on your interest in **{st.session_state.selected_course}**, here are matching colleges:")
+            for col in st.session_state.colleges:
+                st.write(f"- {col}")
+
+            if st.button("Restart Quiz"):
+                st.session_state.quiz_step = "interest"
+                st.session_state.answers = []
+                st.session_state.selected_interest = None
+                st.session_state.selected_course = None
+                st.session_state.colleges = []
 
     # ---------------- Roadmap ----------------
     if menu=="Roadmap":
