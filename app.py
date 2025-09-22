@@ -2,18 +2,20 @@ import streamlit as st
 import json
 import os
 from datetime import date
+import modules.auth as auth
+import modules.roadmap as roadmap
 
-# ---------------- Tailwind CSS ----------------
+# 🔹 Tailwind injection
 st.markdown("""
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-# ---------------- Load career DB ----------------
+# Load career DB
 DATA_PATH = os.path.join("data", "career_tree.json")
 with open(DATA_PATH, "r", encoding="utf-8") as f:
     DATA = json.load(f)
 
-# ---------------- Daily Affirmation ----------------
+# Daily affirmation
 def daily_affirmation():
     affirmations = [
         "🌟 You are capable of amazing things.",
@@ -25,19 +27,10 @@ def daily_affirmation():
     idx = date.today().toordinal() % len(affirmations)
     return affirmations[idx]
 
-# ---------------- Session State Initialization ----------------
+# ---------------- Authentication ----------------
 if "user" not in st.session_state:
     st.session_state.user = None
-if "quiz_step" not in st.session_state:
-    st.session_state.quiz_step = "Q1"
-if "quiz_answers" not in st.session_state:
-    st.session_state.quiz_answers = []
-if "quiz_result" not in st.session_state:
-    st.session_state.quiz_result = None
-if "rerun_after_login" not in st.session_state:
-    st.session_state.rerun_after_login = False
 
-# ---------------- Login ----------------
 if not st.session_state.user:
     st.markdown("""
     <div class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg text-center">
@@ -46,25 +39,18 @@ if not st.session_state.user:
     </div>
     """, unsafe_allow_html=True)
 
+    st.write("---")
     st.subheader("✨ Login / Sign Up")
-    email = st.text_input("Email")
-    name = st.text_input("Name")
+
+    st.info("➡️ For demo, press 'Login' to continue.")
     if st.button("Login"):
-        if email and name:
-            st.session_state.user = {"name": name, "email": email}
-            st.success(f"Logged in as {name}")
-            st.session_state.rerun_after_login = True
-        else:
-            st.error("Please enter both name and email")
+        st.session_state.user = {"name": "User", "email": "demo@example.com"}
+        st.rerun()
 
-# Safe rerun after login
-if st.session_state.rerun_after_login:
-    st.session_state.rerun_after_login = False
-    st.rerun()
-
-# ---------------- Main App ----------------
-if st.session_state.user:
+else:
+    # ---------------- Dashboard ----------------
     user = st.session_state.user
+
     st.markdown(f"""
     <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white p-6 rounded-2xl shadow-lg mb-4">
       <h2 class="text-2xl font-bold">👋 Welcome, {user['name']}</h2>
@@ -72,8 +58,8 @@ if st.session_state.user:
     </div>
     """, unsafe_allow_html=True)
 
-    # ---------------- Sidebar Menu ----------------
-    menu = st.sidebar.radio("📍 Navigate", ["Home", "Quiz", "About", "Logout"])
+    # Menu
+    menu = st.sidebar.radio("📍 Navigate", ["Home", "Quiz", "Roadmap", "About", "Logout"])
 
     if menu == "Logout":
         st.session_state.user = None
@@ -82,36 +68,32 @@ if st.session_state.user:
     # ---------------- Home ----------------
     if menu == "Home":
         st.header("🏠 Home")
-        search_text = st.text_input("Search College / Course / Career")
+
+        # Search Section
+        st.markdown("""
+        <div class="bg-white p-4 rounded-xl shadow-md mb-4">
+          <h3 class="text-xl font-bold">🔎 Search</h3>
+        </div>
+        """, unsafe_allow_html=True)
+
+        search_text = st.text_input("Free Search (College / Course / Career)")
         filter_type = st.selectbox("Filter by", ["Select", "College", "Course", "Career"])
 
         if st.button("Search"):
             if filter_type == "College":
-                names = [c["name"] for c in DATA["colleges"] if search_text.lower() in c["name"].lower()]
-                if names:
-                    st.write("Colleges:", names)
-                else:
-                    st.info("No colleges found")
+                names = [c["name"] for c in DATA["colleges"]]
+                st.write("Colleges:", names)
             elif filter_type == "Course":
-                matches = []
+                st.write("Courses across colleges:")
                 for c in DATA["colleges"]:
                     for cr in c["courses"]:
                         if search_text.lower() in cr.lower():
-                            matches.append(f"{cr} ({c['name']})")
-                if matches:
-                    st.write("Courses found:")
-                    for m in matches:
-                        st.write("-", m)
-                else:
-                    st.info("No courses found")
+                            st.write(f"- {cr} ({c['name']})")
             elif filter_type == "Career":
-                course = search_text
-                if course in DATA["careers"]:
-                    st.write(f"Roadmap for {course}:")
-                    for step in DATA["careers"][course]:
-                        st.write("-", step)
+                if search_text in DATA["careers"]:
+                    roadmap.show_roadmap(search_text)
                 else:
-                    st.info("No roadmap available")
+                    st.error("Career not found in dataset")
 
         st.markdown("---")
         st.subheader("📢 Notifications")
@@ -122,14 +104,14 @@ if st.session_state.user:
     if menu == "Quiz":
         st.header("🎯 Career Quiz")
 
-        # Quiz Tree
+        # Quiz Tree (multi-level)
         quiz_tree = {
             "Q1": {
                 "q": "What are your main interests?",
                 "options": ["Engineering", "Medical", "Commerce", "Arts", "Architecture", "Other"]
             },
             "Q2-Engineering": {
-                "q": "Which branch are you interested in?",
+                "q": "Which Engineering course are you interested in?",
                 "options": ["B.E.", "B.Tech"]
             },
             "Q2-Medical": {
@@ -151,25 +133,63 @@ if st.session_state.user:
             "Q2-Other": {
                 "q": "Which other course are you interested in?",
                 "options": ["BCA", "Diploma", "Other"]
+            },
+            # Q3 for Engineering specializations
+            "Q3-B.Tech": {
+                "q": "Which B.Tech branch are you interested in?",
+                "options": ["CSE", "ECE", "Mechanical", "Civil", "IT", "Electrical"]
+            },
+            "Q3-B.E.": {
+                "q": "Which B.E. branch are you interested in?",
+                "options": ["CSE", "ECE", "Mechanical", "Civil", "IT", "Electrical"]
             }
         }
 
+        # Initialize quiz state
+        if "quiz_step" not in st.session_state:
+            st.session_state.quiz_step = "Q1"
+            st.session_state.quiz_answers = []
+            st.session_state.quiz_result = None
+
+        # Restart
+        if st.button("🔄 Restart Quiz"):
+            st.session_state.quiz_step = "Q1"
+            st.session_state.quiz_answers = []
+            st.session_state.quiz_result = None
+            st.rerun()
+
         node = quiz_tree.get(st.session_state.quiz_step)
+
         if node:
-            choice = st.radio(node["q"], node["options"], key=st.session_state.quiz_step)
+            choice = st.radio(node["q"], node["options"], key=f"{st.session_state.quiz_step}_radio")
+
             if st.button("Next Question"):
                 st.session_state.quiz_answers.append(choice)
-                next_step = f"Q2-{choice}" if st.session_state.quiz_step == "Q1" else None
-                if next_step and next_step in quiz_tree:
-                    st.session_state.quiz_step = next_step
-                else:
+
+                if st.session_state.quiz_step == "Q1":
+                    next_step = f"Q2-{choice}"
+                    if next_step in quiz_tree:
+                        st.session_state.quiz_step = next_step
+                        st.rerun()
+
+                elif st.session_state.quiz_step.startswith("Q2-"):
+                    next_step = f"Q3-{choice}"
+                    if next_step in quiz_tree:
+                        st.session_state.quiz_step = next_step
+                        st.rerun()
+                    else:
+                        st.session_state.quiz_result = choice
+                        st.success(f"✅ Based on your answers, we suggest: **{choice}**")
+
+                elif st.session_state.quiz_step.startswith("Q3-"):
                     st.session_state.quiz_result = choice
                     st.success(f"✅ Based on your answers, we suggest: **{choice}**")
+
         else:
             if st.session_state.quiz_result:
                 st.success(f"✅ Based on your answers, we suggest: **{st.session_state.quiz_result}**")
 
-        # ---------------- Show Roadmap + Colleges ----------------
+        # Roadmap + Colleges
         if st.session_state.quiz_result:
             if st.button("View Roadmap"):
                 course = st.session_state.quiz_result
@@ -190,7 +210,7 @@ if st.session_state.user:
                 for step in steps:
                     st.write("-", step)
 
-                # Recommended Colleges (with fallback rules)
+                # Colleges
                 recommended_colleges = []
                 for c in DATA["colleges"]:
                     if any(course.lower() in cr.lower() for cr in c["courses"]):
@@ -201,26 +221,41 @@ if st.session_state.user:
                     for col in recommended_colleges:
                         st.write("-", col)
                 else:
-                    # 🔹 Fallback logic
-                    if "CA" in course or "Commerce" in course:
-                        st.subheader("🏫 Recommended Colleges for Commerce-related courses")
-                        for c in DATA["colleges"]:
-                            if any("B.Com" in cr or "BBA" in cr for cr in c["courses"]):
-                                st.write("-", c["name"])
-                    elif "Engineering" in course or "Tech" in course:
-                        st.subheader("🏫 Recommended Colleges for Engineering-related courses")
-                        for c in DATA["colleges"]:
-                            if any("B.E." in cr or "B.Tech" in cr for cr in c["courses"]):
-                                st.write("-", c["name"])
-                    elif "Medical" in course or "MBBS" in course or "Nursing" in course:
-                        st.subheader("🏫 Recommended Colleges for Medical-related courses")
-                        for c in DATA["colleges"]:
-                            if any("MBBS" in cr or "Nursing" in cr for cr in c["courses"]):
-                                st.write("-", c["name"])
-                    else:
-                        st.info(f"No colleges found offering {course} in the dataset.")
+                    st.info(f"No colleges found offering {course} in the dataset.")
+
+    # ---------------- Roadmap ----------------
+    if menu == "Roadmap":
+        st.header("🛤 Career Roadmap")
+        career = st.text_input("Enter a career to view roadmap", "B.Arch.")
+        if st.button("Show Roadmap"):
+            if career in DATA["careers"]:
+                steps = DATA["careers"][career]
+            else:
+                steps = [
+                    f"Step 1: Explore basics of {career}",
+                    f"Step 2: Take relevant courses or certifications in {career}",
+                    f"Step 3: Gain practical experience through projects or internships",
+                    f"Step 4: Build portfolio and network",
+                    f"Step 5: Apply for professional opportunities in {career}"
+                ]
+            st.subheader(f"🛤 Roadmap for {career}")
+            for step in steps:
+                st.write("-", step)
+
+            # Colleges
+            recommended_colleges = []
+            for c in DATA["colleges"]:
+                if any(career.lower() in cr.lower() for cr in c["courses"]):
+                    recommended_colleges.append(c["name"])
+
+            if recommended_colleges:
+                st.subheader(f"🏫 Recommended Colleges for {career}")
+                for col in recommended_colleges:
+                    st.write("-", col)
+            else:
+                st.info(f"No colleges found offering {career} in the dataset.")
 
     # ---------------- About ----------------
     if menu == "About":
         st.header("ℹ️ About")
-        st.write("Personalized Career & Education Advisor. Helps you discover suitable courses and provides roadmaps with recommended colleges.")
+        st.write("Prototype for Personalized Career & Education Advisor.")
