@@ -1,61 +1,46 @@
 {
-  "colleges": [
-    {
-      "name": "Shri Krishan Chander Govt. Degree College, Poonch",
-      "courses": ["B.A.", "B.Sc.", "B.Com", "BCA"]
-    },
-    {
-      "name": "Govt. Degree College, Bhaderwah",
-      "courses": ["B.A.", "B.Sc.", "B.Com", "BBA", "BCA"]
-    },
-    {
-      "name": "Govt. Degree College, Kathua",
-      "courses": ["B.Sc. Nursing", "BAMS", "B.Sc. Paramedical"]
-    },
-    {
-      "name": "School of Architecture",
-      "courses": ["B.Arch."]
+  "Arts": {
+    "careers": {
+      "UPSC": {
+        "quiz": [
+          "Do you enjoy current affairs and governance?",
+          "Would you like to work in administration?"
+        ],
+        "roadmap": [
+          "Prepare for UPSC exam.",
+          "Choose optional subject wisely.",
+          "Practice mock tests.",
+          "Appear for Prelims, Mains, and Interview."
+        ]
+      },
+      "Defence": {
+        "quiz": [
+          "Are you interested in physical fitness?",
+          "Do you like discipline and teamwork?"
+        ],
+        "roadmap": [
+          "Appear for NDA/CDS exams.",
+          "Clear physical & medical tests.",
+          "Join training academies.",
+          "Serve in Army/Navy/Airforce."
+        ]
+      }
     }
-  ],
-  "careers": {
-    "B.A.": [
-      "Step 1: Choose your specialization (History, Political Science, etc.)",
-      "Step 2: Explore certification programs in Arts",
-      "Step 3: Work on projects, papers, or internships",
-      "Step 4: Build portfolio / publish research",
-      "Step 5: Apply for higher studies or jobs in Arts"
-    ],
-    "B.Com": [
-      "Step 1: Learn fundamentals of commerce",
-      "Step 2: Explore finance & accounting certifications",
-      "Step 3: Gain internship in banking/finance sector",
-      "Step 4: Build strong resume & network",
-      "Step 5: Apply for finance, audit, or management roles"
-    ],
-    "BBA": [
-      "Step 1: Learn basics of management & business",
-      "Step 2: Take part in entrepreneurship projects",
-      "Step 3: Do internships in companies",
-      "Step 4: Build leadership & communication skills",
-      "Step 5: Apply for MBA or management roles"
-    ],
-    "B.Arch.": [
-      "Step 1: Explore basics of architecture & design",
-      "Step 2: Work on CAD & design software",
-      "Step 3: Do architecture internships/projects",
-      "Step 4: Build strong portfolio",
-      "Step 5: Apply for architecture firms & higher studies"
-    ],
-    "MBBS": [
-      "Step 1: Get admission into MBBS",
-      "Step 2: Learn anatomy, physiology, pathology",
-      "Step 3: Do hospital rotations",
-      "Step 4: Choose specialization",
-      "Step 5: Apply for postgraduate studies or practice"
-    ]
   },
-  "notifications": [
-    {"msg": "Admissions open for B.Arch. 2025 batch."},
-    {"msg": "Scholarship applications are now live."}
-  ]
+  "B.Com": {
+    "careers": {
+      "CA/CPA": {
+        "quiz": [
+          "Do you like numbers and finance?",
+          "Are you comfortable with long-term study plans?"
+        ],
+        "roadmap": [
+          "Register with ICAI.",
+          "Clear Foundation, Intermediate, Final exams.",
+          "Complete articleship.",
+          "Apply for jobs in finance & audit firms."
+        ]
+      }
+    }
+  }
 }
