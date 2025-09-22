@@ -42,9 +42,14 @@ if not st.session_state.user:
     st.write("---")
     st.subheader("✨ Login / Sign Up")
 
-    # Dummy login for demo (neutral message)
-    if st.button("Login as Demo User"):
+    if "login_pressed" not in st.session_state:
+        st.session_state.login_pressed = False
+
+    if st.button("Login"):
         st.session_state.user = {"name":"User","email":"demo@example.com"}
+        st.session_state.login_pressed = True
+
+    if st.session_state.login_pressed:
         st.success("Logged in successfully ✅")
         st.experimental_rerun()
 
