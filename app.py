@@ -190,7 +190,7 @@ if st.session_state.user:
                 for step in steps:
                     st.write("-", step)
 
-                # Recommended Colleges
+                # Recommended Colleges (with fallback rules)
                 recommended_colleges = []
                 for c in DATA["colleges"]:
                     if any(course.lower() in cr.lower() for cr in c["courses"]):
@@ -201,7 +201,24 @@ if st.session_state.user:
                     for col in recommended_colleges:
                         st.write("-", col)
                 else:
-                    st.info(f"No colleges found offering {course} in the dataset.")
+                    # 🔹 Fallback logic
+                    if "CA" in course or "Commerce" in course:
+                        st.subheader("🏫 Recommended Colleges for Commerce-related courses")
+                        for c in DATA["colleges"]:
+                            if any("B.Com" in cr or "BBA" in cr for cr in c["courses"]):
+                                st.write("-", c["name"])
+                    elif "Engineering" in course or "Tech" in course:
+                        st.subheader("🏫 Recommended Colleges for Engineering-related courses")
+                        for c in DATA["colleges"]:
+                            if any("B.E." in cr or "B.Tech" in cr for cr in c["courses"]):
+                                st.write("-", c["name"])
+                    elif "Medical" in course or "MBBS" in course or "Nursing" in course:
+                        st.subheader("🏫 Recommended Colleges for Medical-related courses")
+                        for c in DATA["colleges"]:
+                            if any("MBBS" in cr or "Nursing" in cr for cr in c["courses"]):
+                                st.write("-", c["name"])
+                    else:
+                        st.info(f"No colleges found offering {course} in the dataset.")
 
     # ---------------- About ----------------
     if menu == "About":
