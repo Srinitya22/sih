@@ -105,12 +105,23 @@ if st.session_state.user:
                 else:
                     st.info("No courses found")
             elif filter_type == "Career":
-                if search_text in DATA["careers"]:
-                    st.write(f"Roadmap for {search_text}:")
-                    for step in DATA["careers"][search_text]:
+                course = search_text
+                if course in DATA["careers"]:
+                    st.write(f"Roadmap for {course}:")
+                    for step in DATA["careers"][course]:
                         st.write("-", step)
                 else:
-                    st.info("Career not found")
+                    # Generate generic roadmap
+                    st.write(f"Roadmap for {course}:")
+                    generic_steps = [
+                        f"Step 1: Explore basics of {course}",
+                        f"Step 2: Take relevant courses or certifications in {course}",
+                        f"Step 3: Gain practical experience through projects or internships",
+                        f"Step 4: Build portfolio and network",
+                        f"Step 5: Apply for professional opportunities in {course}"
+                    ]
+                    for step in generic_steps:
+                        st.write("-", step)
 
         st.markdown("---")
         st.subheader("📢 Notifications")
@@ -172,11 +183,19 @@ if st.session_state.user:
             if st.button("View Roadmap"):
                 course = st.session_state.quiz_result
                 if course in DATA["careers"]:
-                    st.subheader(f"🛤 Roadmap for {course}")
-                    for step in DATA["careers"][course]:
-                        st.write("-", step)
+                    steps = DATA["careers"][course]
                 else:
-                    st.info("No roadmap available for this course yet.")
+                    # Generate generic roadmap
+                    steps = [
+                        f"Step 1: Explore basics of {course}",
+                        f"Step 2: Take relevant courses or certifications in {course}",
+                        f"Step 3: Gain practical experience through projects or internships",
+                        f"Step 4: Build portfolio and network",
+                        f"Step 5: Apply for professional opportunities in {course}"
+                    ]
+                st.subheader(f"🛤 Roadmap for {course}")
+                for step in steps:
+                    st.write("-", step)
 
     # ---------------- About ----------------
     if menu == "About":
