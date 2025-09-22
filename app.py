@@ -2,7 +2,6 @@ import streamlit as st
 import json
 import os
 from datetime import date
-import modules.roadmap as roadmap
 
 # ---------------- Tailwind (optional styling) ----------------
 st.markdown("""
@@ -29,13 +28,10 @@ def daily_affirmation():
 # ---------------- Session State Initialization ----------------
 if "user" not in st.session_state:
     st.session_state.user = None
-
 if "quiz_step" not in st.session_state:
-    st.session_state.quiz_step = None
-if "selected_interest" not in st.session_state:
-    st.session_state.selected_interest = None
-if "selected_course" not in st.session_state:
-    st.session_state.selected_course = None
+    st.session_state.quiz_step = "Q1"
+if "quiz_answers" not in st.session_state:
+    st.session_state.quiz_answers = []
 if "quiz_result" not in st.session_state:
     st.session_state.quiz_result = None
 
@@ -48,12 +44,18 @@ if not st.session_state.user:
     </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("✨ Login")
-    if st.button("Demo Login"):
-        st.session_state.user = {"name": "User", "email": "demo@example.com"}
-        st.success("Logged in ✅")
+    st.subheader("✨ Login / Sign Up")
+    email = st.text_input("Email")
+    name = st.text_input("Name")
+    if st.button("Login"):
+        if email and name:
+            st.session_state.user = {"name": name, "email": email}
+            st.success(f"Logged in as {name}")
+            st.experimental_rerun()
+        else:
+            st.error("Please enter both name and email")
+
 else:
-    # ---------------- Dashboard ----------------
     user = st.session_state.user
     st.markdown(f"""
     <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white p-6 rounded-2xl shadow-lg mb-4">
@@ -62,38 +64,45 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # ---------------- Menu ----------------
-    menu = st.sidebar.radio("📍 Navigate", ["Home","Quiz","Roadmap","About","Logout"])
+    # ---------------- Sidebar Menu ----------------
+    menu = st.sidebar.radio("📍 Navigate", ["Home", "Quiz", "About", "Logout"])
 
     if menu == "Logout":
         st.session_state.user = None
-        st.session_state.quiz_step = None
-        st.session_state.selected_interest = None
-        st.session_state.selected_course = None
-        st.session_state.quiz_result = None
         st.experimental_rerun()
 
     # ---------------- Home ----------------
     if menu == "Home":
         st.header("🏠 Home")
-        search_text = st.text_input("Free Search (College / Course / Career)")
+        search_text = st.text_input("Search College / Course / Career")
         filter_type = st.selectbox("Filter by", ["Select", "College", "Course", "Career"])
 
         if st.button("Search"):
             if filter_type == "College":
-                names = [c["name"] for c in DATA["colleges"]]
-                st.write("Colleges:", names)
+                names = [c["name"] for c in DATA["colleges"] if search_text.lower() in c["name"].lower()]
+                if names:
+                    st.write("Colleges:", names)
+                else:
+                    st.info("No colleges found")
             elif filter_type == "Course":
-                st.write("Courses across colleges:")
+                matches = []
                 for c in DATA["colleges"]:
                     for cr in c["courses"]:
                         if search_text.lower() in cr.lower():
-                            st.write(f"- {cr} ({c['name']})")
+                            matches.append(f"{cr} ({c['name']})")
+                if matches:
+                    st.write("Courses found:")
+                    for m in matches:
+                        st.write("-", m)
+                else:
+                    st.info("No courses found")
             elif filter_type == "Career":
                 if search_text in DATA["careers"]:
-                    roadmap.show_roadmap(search_text)
+                    st.write(f"Roadmap for {search_text}:")
+                    for step in DATA["careers"][search_text]:
+                        st.write("-", step)
                 else:
-                    st.error("Career not found in demo dataset")
+                    st.info("Career not found")
 
         st.markdown("---")
         st.subheader("📢 Notifications")
@@ -104,65 +113,63 @@ else:
     if menu == "Quiz":
         st.header("🎯 Career Quiz")
 
-        # Step 1: Select interest
-        if st.session_state.quiz_step is None:
-            st.session_state.quiz_step = "interest"
-
-        if st.session_state.quiz_step == "interest":
-            interest = st.radio("What are your main interests?", ["Engineering", "Medical", "Commerce", "Arts", "Architecture", "Other"])
-            if st.button("Next - Select Interest"):
-                st.session_state.selected_interest = interest
-                st.session_state.quiz_step = "course"
-
-        # Step 2: Select course based on interest
-        elif st.session_state.quiz_step == "course":
-            interest = st.session_state.selected_interest
-            # Map available courses for each interest
-            interest_courses_map = {
-                "Engineering": ["B.E.", "B.Tech", "BCA"],
-                "Medical": ["MBBS", "B.Sc. Nursing", "BDS", "BAMS", "B.Sc. Paramedical"],
-                "Commerce": ["BBA", "Commerce", "MCA"],
-                "Arts": ["B.A.", "B.Sc. Home Science", "B.Sc.", "Hons."],
-                "Architecture": ["B.Arch."],
-                "Other": ["Culinary", "Photography", "Management"]
+        quiz_tree = {
+            "Q1": {
+                "q": "What are your main interests?",
+                "options": ["Engineering", "Medical", "Commerce", "Arts", "Architecture", "Other"]
+            },
+            "Q2-Engineering": {
+                "q": "Which branch are you interested in?",
+                "options": ["B.E.", "B.Tech"]
+            },
+            "Q2-Medical": {
+                "q": "Which field are you interested in?",
+                "options": ["MBBS", "B.Sc. Nursing", "BAMS", "B.Sc. Paramedical"]
+            },
+            "Q2-Commerce": {
+                "q": "Which course in Commerce are you interested in?",
+                "options": ["BBA", "B.Com", "CA/CPA"]
+            },
+            "Q2-Arts": {
+                "q": "Which Arts course are you interested in?",
+                "options": ["B.A.", "BFA", "BA(Hons.)"]
+            },
+            "Q2-Architecture": {
+                "q": "Which Architecture course are you interested in?",
+                "options": ["B.Arch."]
+            },
+            "Q2-Other": {
+                "q": "Which other course are you interested in?",
+                "options": ["BCA", "Diploma", "Other"]
             }
-            courses = interest_courses_map.get(interest, [])
-            course = st.radio(f"Which course in {interest} are you interested in?", courses)
-            if st.button("Next - Get Recommendation"):
-                st.session_state.selected_course = course
-                st.session_state.quiz_step = "result"
+        }
 
-        # Step 3: Show recommendation
-        elif st.session_state.quiz_step == "result":
-            course = st.session_state.selected_course
-            st.session_state.quiz_result = course
-            st.success(f"✅ Based on your answers, we suggest: **{course}**")
-            matching_colleges = []
-            for c in DATA["colleges"]:
-                for cr in c["courses"]:
-                    if course.lower() in cr.lower():
-                        matching_colleges.append(c["name"])
-            if matching_colleges:
-                st.write("You may consider these colleges:")
-                for col in matching_colleges:
-                    st.write(f"- {col}")
-            if st.button("View Roadmap"):
-                if course in DATA["careers"]:
-                    roadmap.show_roadmap(course)
+        node = quiz_tree.get(st.session_state.quiz_step)
+        if node:
+            choice = st.radio(node["q"], node["options"], key=st.session_state.quiz_step)
+            if st.button("Next Question"):
+                st.session_state.quiz_answers.append(choice)
+                next_step = f"Q2-{choice}" if st.session_state.quiz_step == "Q1" else None
+                if next_step and next_step in quiz_tree:
+                    st.session_state.quiz_step = next_step
                 else:
-                    st.info("No roadmap available for this course.")
+                    st.session_state.quiz_result = choice
+                    st.success(f"✅ Based on your answers, we suggest: **{choice}**")
+        else:
+            if st.session_state.quiz_result:
+                st.success(f"✅ Based on your answers, we suggest: **{st.session_state.quiz_result}**")
 
-    # ---------------- Roadmap ----------------
-    if menu == "Roadmap":
-        st.header("🛤 Career Roadmap")
-        career = st.text_input("Enter a career to view roadmap")
-        if st.button("Show Roadmap"):
-            if career in DATA["careers"]:
-                roadmap.show_roadmap(career)
-            else:
-                st.info("No roadmap available for this career.")
+        if st.session_state.quiz_result:
+            if st.button("View Roadmap"):
+                course = st.session_state.quiz_result
+                if course in DATA["careers"]:
+                    st.subheader(f"🛤 Roadmap for {course}")
+                    for step in DATA["careers"][course]:
+                        st.write("-", step)
+                else:
+                    st.info("No roadmap available for this course yet.")
 
     # ---------------- About ----------------
     if menu == "About":
         st.header("ℹ️ About")
-        st.write("Prototype for Personalized Career & Education Advisor.")
+        st.write("Personalized Career & Education Advisor. Helps you discover suitable courses and provides roadmaps to achieve your goals.")
