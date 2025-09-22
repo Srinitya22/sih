@@ -3,7 +3,7 @@ import json
 import os
 from datetime import date
 
-# ---------------- Tailwind (optional styling) ----------------
+# ---------------- Tailwind CSS ----------------
 st.markdown("""
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 """, unsafe_allow_html=True)
@@ -34,6 +34,8 @@ if "quiz_answers" not in st.session_state:
     st.session_state.quiz_answers = []
 if "quiz_result" not in st.session_state:
     st.session_state.quiz_result = None
+if "rerun_after_login" not in st.session_state:
+    st.session_state.rerun_after_login = False
 
 # ---------------- Login ----------------
 if not st.session_state.user:
@@ -51,11 +53,17 @@ if not st.session_state.user:
         if email and name:
             st.session_state.user = {"name": name, "email": email}
             st.success(f"Logged in as {name}")
-            st.experimental_rerun()
+            st.session_state.rerun_after_login = True
         else:
             st.error("Please enter both name and email")
 
-else:
+# Safe rerun after login
+if st.session_state.rerun_after_login:
+    st.session_state.rerun_after_login = False
+    st.experimental_rerun()
+
+# ---------------- Main App ----------------
+if st.session_state.user:
     user = st.session_state.user
     st.markdown(f"""
     <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white p-6 rounded-2xl shadow-lg mb-4">
@@ -113,6 +121,7 @@ else:
     if menu == "Quiz":
         st.header("🎯 Career Quiz")
 
+        # Quiz Tree
         quiz_tree = {
             "Q1": {
                 "q": "What are your main interests?",
