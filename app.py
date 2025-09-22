@@ -11,7 +11,7 @@ st.markdown("""
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 """, unsafe_allow_html=True)
 
-# Load career/college data
+# Load career and college data
 DATA_PATH = os.path.join("data", "career_tree.json")
 with open(DATA_PATH, "r", encoding="utf-8") as f:
     DATA = json.load(f)
@@ -41,43 +41,44 @@ if not st.session_state.user:
     """, unsafe_allow_html=True)
 
     st.write("---")
-    st.subheader("✨ Login / Sign Up")
+    st.subheader("✨ Login")
+    login_email = st.text_input("Email", key="login_email")
+    login_password = st.text_input("Password", type="password", key="login_password")
+    if st.button("Login"):
+        user = auth.login(login_email, login_password)
+        if user:
+            st.session_state.user = user
+            st.success(f"Logged in as {user['name']}")
+            st.experimental_rerun()
+        else:
+            st.error("Invalid email or password")
 
-    # Login Form
-    with st.form("login_form"):
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Login")
-        if submitted:
-            user = auth.login(email, password)
-            if user:
-                st.session_state.user = user
-                st.success(f"Logged in as {user['name']}")
-                st.experimental_rerun()
-            else:
-                st.error("Invalid email or password")
-
-    st.markdown("-----")
-
-    # Sign-up Form
-    with st.form("signup_form"):
-        st.subheader("Create an account")
-        name = st.text_input("Name")
-        signup_email = st.text_input("Email")
-        signup_password = st.text_input("Password", type="password")
-        signup_submit = st.form_submit_button("Sign Up")
-        if signup_submit:
-            success, message = auth.signup(name, signup_email, signup_password)
-            if success:
-                st.success("Account created successfully! Please log in.")
-            else:
-                st.error(message)
+    st.write("---")
+    st.subheader("📝 Sign Up")
+    signup_name = st.text_input("Name", key="signup_name")
+    signup_email = st.text_input("Email", key="signup_email")
+    signup_password = st.text_input("Password", type="password", key="signup_password")
+    if st.button("Sign Up"):
+        success, message = auth.signup(signup_name, signup_email, signup_password)
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
 
 else:
     # ---------------- Dashboard ----------------
     user = st.session_state.user
-    st.sidebar.title(f"👤 {user['name']}")
-    menu = st.sidebar.radio("📍 Navigate", ["Home", "Profile", "Explore", "Quiz", "Notifications", "About", "Logout"])
+
+    st.markdown(f"""
+    <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white p-6 rounded-2xl shadow-lg mb-4">
+      <h2 class="text-2xl font-bold">👋 Welcome, {user['name']}</h2>
+      <p>{daily_affirmation()}</p>
+      <p>📌 Tip: Explore courses and colleges based on your interests!</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Sidebar Menu
+    menu = st.sidebar.radio("📍 Navigate", ["Home", "Profile", "Explore", "Quiz", "Notifications", "About Us", "Logout"])
 
     if menu == "Logout":
         st.session_state.user = None
@@ -86,71 +87,68 @@ else:
     # ---------------- Home ----------------
     if menu == "Home":
         st.header("🏠 Home")
-        st.markdown(f"""
-        <div class="bg-gradient-to-r from-green-400 to-blue-500 text-white p-6 rounded-2xl shadow-lg mb-4">
-          <h2 class="text-2xl font-bold">👋 Welcome, {user['name']}</h2>
-          <p>{daily_affirmation()}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # Extra section
-        st.subheader("✨ Today's Tip")
-        st.info("Set clear goals and explore courses that align with your strengths.")
+        st.write("Welcome to your career compass dashboard!")
+        st.write("Explore courses, colleges, and personalized recommendations.")
+        st.write("✨ Check back daily for motivation and tips!")
 
     # ---------------- Profile ----------------
     if menu == "Profile":
-        st.header("📝 Profile")
-        st.write(f"**Name:** {user['name']}")
-        st.write(f"**Email:** {user['email']}")
+        st.header("👤 Profile")
+        st.write(f"Name: {user['name']}")
+        st.write(f"Email: {user['email']}")
 
     # ---------------- Explore ----------------
     if menu == "Explore":
-        st.header("🔎 Explore Colleges and Courses")
-        search_type = st.radio("Search by:", ["College", "Course", "Career"])
-        search_text = st.text_input("Enter keyword")
-
+        st.header("🔎 Explore Colleges & Careers")
+        search_type = st.selectbox("Search by:", ["Select", "College", "Course", "Career"])
+        query = st.text_input("Enter search text")
         if st.button("Search"):
             if search_type == "College":
-                matched = [c["name"] for c in DATA["colleges"] if search_text.lower() in c["name"].lower()]
-                if matched:
-                    st.write("🏫 Colleges Found:")
-                    for m in matched:
-                        st.write(f"- {m}")
+                results = [c["name"] for c in DATA["colleges"] if query.lower() in c["name"].lower()]
+                if results:
+                    st.write("🏫 Colleges found:")
+                    for r in results:
+                        st.write(f"- {r}")
                 else:
-                    st.warning("No matching colleges found.")
-
+                    st.write("No colleges found")
             elif search_type == "Course":
-                matched_courses = []
+                found = []
                 for c in DATA["colleges"]:
                     for cr in c["courses"]:
-                        if search_text.lower() in cr.lower():
-                            matched_courses.append((cr, c["name"]))
-                if matched_courses:
-                    st.write("📚 Courses Found:")
-                    for cr, clg in matched_courses:
-                        st.write(f"- {cr} ({clg})")
+                        if query.lower() in cr.lower():
+                            found.append(f"{cr} ({c['name']})")
+                if found:
+                    st.write("📚 Courses found:")
+                    for f in found:
+                        st.write(f"- {f}")
                 else:
-                    st.warning("No matching courses found.")
-
+                    st.write("No courses found")
             elif search_type == "Career":
-                if search_text in DATA["careers"]:
-                    roadmap.show_roadmap(search_text)
+                if query in DATA["careers"]:
+                    roadmap.show_roadmap(query)
                 else:
-                    st.warning("Career not found in dataset.")
+                    st.write("Career not found")
 
     # ---------------- Quiz ----------------
     if menu == "Quiz":
         st.header("🎯 Career Quiz")
 
-        # Quiz Tree Example
+        # Define quiz tree dynamically
         quiz_tree = {
-            "Q1": {"q": "What are your main interests?", "options": ["Engineering", "Medical", "Commerce", "Arts", "Architecture", "Other"]},
-            "Q2-Engineering": {"q": "Which branch of Engineering interests you?", "options": ["CSE", "ECE", "Mechanical", "Civil"]},
-            "Q2-Medical": {"q": "Which field of Medical are you interested in?", "options": ["MBBS", "BDS", "BAMS", "B.Sc. Nursing", "Paramedical"]},
-            "Q2-Commerce": {"q": "Which course in Commerce are you interested in?", "options": ["BBA", "B.Com", "CA/CPA"]},
-            "Q2-Arts": {"q": "Which field of Arts are you interested in?", "options": ["Literature", "Psychology", "History", "Fine Arts"]},
-            "Q2-Architecture": {"q": "Which Architecture course are you interested in?", "options": ["B.Arch"]},
-            "Q2-Other": {"q": "Other courses"}
+            "Q1": {"q": "What are your main interests?",
+                   "options": ["Engineering", "Medical", "Commerce", "Arts", "Architecture", "Other"]},
+            "Q2-Engineering": {"q": "Which branch of Engineering interests you?",
+                                "options": ["CSE", "ECE", "Mechanical", "Civil"]},
+            "Q2-Medical": {"q": "Which field of Medical/Healthcare interests you?",
+                           "options": ["MBBS", "BDS", "BAMS", "B.Sc. Nursing", "B.Sc. Paramedical"]},
+            "Q2-Commerce": {"q": "Which course in Commerce are you interested in?",
+                             "options": ["BBA", "B.Com", "CA/CPA"]},
+            "Q2-Arts": {"q": "Which course in Arts are you interested in?",
+                        "options": ["BA", "BFA", "B.Sc. Home Science"]},
+            "Q2-Architecture": {"q": "Which Architecture course are you interested in?",
+                                 "options": ["B.Arch."]},
+            "Q2-Other": {"q": "Which other courses are you interested in?",
+                         "options": ["Diploma", "Certificate"]}
         }
 
         if "quiz_step" not in st.session_state:
@@ -168,26 +166,20 @@ else:
                 st.session_state.quiz_step = next_key
             else:
                 st.session_state.quiz_result = choice
+                st.success(f"✅ Based on your answers, we suggest: **{choice}**")
 
         if st.session_state.quiz_result:
-            st.success(f"✅ Based on your answers, we suggest: **{st.session_state.quiz_result}**")
-
-            # Show roadmap
-            roadmap.show_roadmap(st.session_state.quiz_result)
-
-            # Show recommended colleges
-            colleges = recommender.colleges_for_course(st.session_state.quiz_result)
+            course = st.session_state.quiz_result
+            st.markdown(f"🛤 **Roadmap for {course}**")
+            roadmap.show_roadmap(course)
+            # Recommended colleges
+            colleges = recommender.colleges_for_course(course)
             if colleges:
-                st.subheader("🏫 Recommended Colleges for this course:")
-                for clg in colleges:
-                    st.write(f"- {clg}")
+                st.markdown(f"🏫 **Recommended Colleges for {course}:**")
+                for c in colleges:
+                    st.write(f"- {c}")
             else:
-                st.warning("No colleges found offering this course in the dataset.")
-
-            if st.button("Restart Quiz"):
-                st.session_state.quiz_step = "Q1"
-                st.session_state.answers = []
-                st.session_state.quiz_result = None
+                st.write(f"No colleges found offering {course} in the dataset.")
 
     # ---------------- Notifications ----------------
     if menu == "Notifications":
@@ -195,7 +187,8 @@ else:
         for n in DATA["notifications"]:
             st.info(n["msg"])
 
-    # ---------------- About ----------------
-    if menu == "About":
+    # ---------------- About Us ----------------
+    if menu == "About Us":
         st.header("ℹ️ About Us")
-        st.write("Prototype for Career Compass — Personalized Career & Education Advisor.")
+        st.write("Personalized Career & Education Advisor App")
+        st.write("Provides career recommendations, college info, and roadmap guidance based on your interests.")
