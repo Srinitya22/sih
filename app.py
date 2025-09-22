@@ -60,7 +60,7 @@ if not st.session_state.user:
 # Safe rerun after login
 if st.session_state.rerun_after_login:
     st.session_state.rerun_after_login = False
-    st.experimental_rerun()
+    st.rerun()
 
 # ---------------- Main App ----------------
 if st.session_state.user:
@@ -77,7 +77,7 @@ if st.session_state.user:
 
     if menu == "Logout":
         st.session_state.user = None
-        st.experimental_rerun()
+        st.rerun()
 
     # ---------------- Home ----------------
     if menu == "Home":
@@ -111,17 +111,7 @@ if st.session_state.user:
                     for step in DATA["careers"][course]:
                         st.write("-", step)
                 else:
-                    # Generate generic roadmap
-                    st.write(f"Roadmap for {course}:")
-                    generic_steps = [
-                        f"Step 1: Explore basics of {course}",
-                        f"Step 2: Take relevant courses or certifications in {course}",
-                        f"Step 3: Gain practical experience through projects or internships",
-                        f"Step 4: Build portfolio and network",
-                        f"Step 5: Apply for professional opportunities in {course}"
-                    ]
-                    for step in generic_steps:
-                        st.write("-", step)
+                    st.info("No roadmap available")
 
         st.markdown("---")
         st.subheader("📢 Notifications")
