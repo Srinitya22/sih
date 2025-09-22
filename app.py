@@ -179,13 +179,15 @@ if st.session_state.user:
             if st.session_state.quiz_result:
                 st.success(f"✅ Based on your answers, we suggest: **{st.session_state.quiz_result}**")
 
+        # ---------------- Show Roadmap + Colleges ----------------
         if st.session_state.quiz_result:
             if st.button("View Roadmap"):
                 course = st.session_state.quiz_result
+
+                # Roadmap
                 if course in DATA["careers"]:
                     steps = DATA["careers"][course]
                 else:
-                    # Generate generic roadmap
                     steps = [
                         f"Step 1: Explore basics of {course}",
                         f"Step 2: Take relevant courses or certifications in {course}",
@@ -193,11 +195,25 @@ if st.session_state.user:
                         f"Step 4: Build portfolio and network",
                         f"Step 5: Apply for professional opportunities in {course}"
                     ]
+
                 st.subheader(f"🛤 Roadmap for {course}")
                 for step in steps:
                     st.write("-", step)
 
+                # Recommended Colleges
+                recommended_colleges = []
+                for c in DATA["colleges"]:
+                    if any(course.lower() in cr.lower() for cr in c["courses"]):
+                        recommended_colleges.append(c["name"])
+
+                if recommended_colleges:
+                    st.subheader(f"🏫 Recommended Colleges for {course}")
+                    for col in recommended_colleges:
+                        st.write("-", col)
+                else:
+                    st.info(f"No colleges found offering {course} in the dataset.")
+
     # ---------------- About ----------------
     if menu == "About":
         st.header("ℹ️ About")
-        st.write("Personalized Career & Education Advisor. Helps you discover suitable courses and provides roadmaps to achieve your goals.")
+        st.write("Personalized Career & Education Advisor. Helps you discover suitable courses and provides roadmaps with recommended colleges.")
